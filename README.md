@@ -9,6 +9,8 @@ A real-time traffic monitoring dashboard built with Flask and YOLO object detect
 - **Real-Time YOLO Detection**: Live object detection using YOLOv8
 - **Traffic Density Monitoring**: Color-coded traffic levels (Low/Medium/High)
 - **Animal Detection Alerts**: Warning system for road hazards
+- **Video Upload & Management**: Upload your own videos through the web interface
+- **Dynamic Video Switching**: Switch between different uploaded videos instantly
 - **Responsive Dashboard**: Works on desktop, tablet, and mobile
 - **Auto-Refresh**: Updates every second with live data
 - **Modular Architecture**: Easy to extend and customize
@@ -20,6 +22,29 @@ A real-time traffic monitoring dashboard built with Flask and YOLO object detect
 - **Animal Alerts**: Warning when animals detected on road
 - **Detection Objects**: Categorized list of all detected items
 - **Last Update**: Timestamp of latest detection
+
+## 📤 Video Upload & Management
+
+The dashboard now supports uploading and managing your own video files:
+
+### Upload Features
+- **File Upload**: Upload MP4, AVI, MOV, MKV, WebM, M4V files (max 500MB)
+- **Real-time Processing**: Videos are processed immediately after upload
+- **Progress Feedback**: Visual upload progress and status messages
+- **File Validation**: Automatic format and size validation
+
+### Video Management
+- **Video Library**: View all uploaded videos with file details
+- **Instant Switching**: Switch between videos without restarting
+- **Active Video Indicator**: See which video is currently being processed
+- **File Information**: View file size and upload status for each video
+
+### How to Use
+1. Click "Choose File" in the upload section
+2. Select your video file (supported formats listed above)
+3. Click "Upload & Switch Video"
+4. The system will automatically switch to processing your uploaded video
+5. Use the video list to switch between different uploaded videos
 
 ## 🚀 Quick Start
 
