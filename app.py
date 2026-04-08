@@ -296,12 +296,19 @@ detection_processor = DetectionProcessor()
 # FLASK LIFECYCLE MANAGEMENT
 # ============================================================================
 
-@app.before_first_request
-def startup():
-    """Start YOLO detector when Flask app starts."""
-    print("Starting Flask app...")
-    global yolo_detector
+# Global flag to ensure startup only runs once
+_app_started = False
 
+@app.before_request
+def startup():
+    """Start YOLO detector when Flask app starts (runs only once)."""
+    global _app_started, yolo_detector
+
+    if _app_started:
+        return
+    _app_started = True
+
+    print("Starting Flask app...")
     if yolo_detector and yolo_detector.start():
         print("YOLO detector initialized and running")
     else:
