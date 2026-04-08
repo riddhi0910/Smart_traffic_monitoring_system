@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traffic Monitoring Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>🚗 Real-Time Traffic Monitoring Dashboard</h1>
+            <p class="status-text">Live Detection Feed</p>
+        </header>
+
+        <!-- Main Dashboard Grid -->
+        <div class="dashboard">
+            <!-- Vehicle Count Card -->
+            <div class="card metric-card vehicle-card">
+                <div class="card-icon">📊</div>
+                <div class="card-content">
+                    <h2>Total Vehicles</h2>
+                    <div class="metric-value" id="vehicle-count">0</div>
+                    <p class="card-label">Objects Detected</p>
+                </div>
+            </div>
+
+            <!-- Traffic Density Card -->
+            <div class="card metric-card density-card">
+                <div class="card-icon">🚦</div>
+                <div class="card-content">
+                    <h2>Traffic Density</h2>
+                    <div class="traffic-density" id="traffic-density">
+                        <span class="density-badge density-low">Low</span>
+                    </div>
+                    <p class="card-label">Current Status</p>
+                </div>
+            </div>
+
+            <!-- Animal Alert Card -->
+            <div class="card metric-card alert-card">
+                <div class="card-icon">⚠️</div>
+                <div class="card-content">
+                    <h2>Animal Alert</h2>
+                    <div class="alert-status" id="alert-status">
+                        <span class="badge badge-safe">✓ No Alert</span>
+                    </div>
+                    <p class="card-label" id="animal-type-label">None Detected</p>
+                </div>
+            </div>
+
+            <!-- Timestamp Card -->
+            <div class="card metric-card timestamp-card">
+                <div class="card-icon">⏱️</div>
+                <div class="card-content">
+                    <h2>Last Update</h2>
+                    <div class="timestamp" id="timestamp">--:--:--</div>
+                    <p class="card-label">Auto-refresh every 1s</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detected Objects Section -->
+        <div class="card full-width-card">
+            <h2 class="section-title">📋 Detected Objects</h2>
+            <div class="objects-grid">
+                <div class="object-section">
+                    <h3 class="subsection-title">🚗 Vehicles</h3>
+                    <div class="object-list" id="vehicles-list">
+                        <span class="empty-text">None</span>
+                    </div>
+                </div>
+
+                <div class="object-section">
+                    <h3 class="subsection-title">🐄 Animals</h3>
+                    <div class="object-list" id="animals-list">
+                        <span class="empty-text">None</span>
+                    </div>
+                </div>
+
+                <div class="object-section">
+                    <h3 class="subsection-title">🚧 Traffic Infrastructure</h3>
+                    <div class="object-list" id="infrastructure-list">
+                        <span class="empty-text">None</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Traffic Monitoring System • YOLO Detection Engine</p>
+        </footer>
+    </div>
+
+    <!-- JavaScript for Real-Time Updates -->
+    <script>
+        // Configuration
+        const REFRESH_INTERVAL = 1000; // 1 second in milliseconds
+        const API_ENDPOINT = '/data';
+
+        /**
+         * Fetch detection data from the backend API
+         */
+        async function fetchData() {
+            try {
+                const response = await fetch(API_ENDPOINT);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                updateDashboard(data);
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
+
+        /**
+         * Update all dashboard elements with new data
+         */
+        function updateDashboard(data) {
+            // Update vehicle count
+            updateVehicleCount(data.vehicle_count);
+
+            // Update traffic density
+            updateTrafficDensity(data.traffic_density);
+
+            // Update animal alert
+            updateAnimalAlert(data.animal_detected, data.animal_types);
+
+            // Update timestamp
+            updateTimestamp(data.timestamp);
+
+            // Update detected objects list
+            updateDetectedObjects(data.detected_objects);
+        }
+
+        /**
+         * Update the vehicle count metric
+         */
+        function updateVehicleCount(count) {
+            const element = document.getElementById('vehicle-count');
+            element.textContent = count;
+
+            // Add pulse animation on update
+            element.classList.add('pulse');
+            setTimeout(() => element.classList.remove('pulse'), 600);
+        }
+
+        /**
+         * Update the traffic density metric with color coding
+         */
+        function updateTrafficDensity(density) {
+            const element = document.getElementById('traffic-density');
+            const badgeClass = `density-${density.toLowerCase()}`;
+            
+            element.innerHTML = `<span class="density-badge ${badgeClass}">${density}</span>`;
+
+            // Add glow animation based on density
+            const card = element.closest('.card');
+            card.classList.remove('density-low-glow', 'density-medium-glow', 'density-high-glow');
+            card.classList.add(`density-${density.toLowerCase()}-glow`);
+        }
+
+        /**
+         * Update the animal alert status
+         */
+        function updateAnimalAlert(detected, animalTypes) {
+            const statusElement = document.getElementById('alert-status');
+            const labelElement = document.getElementById('animal-type-label');
+            
+            if (detected && animalTypes.length > 0) {
+                statusElement.innerHTML = `<span class="badge badge-alert">⚠️ ALERT!</span>`;
+                labelElement.textContent = `${animalTypes.join(', ')} detected`;
+
+                // Add warning animation
+                const card = statusElement.closest('.card');
+                card.classList.add('alert-active');
+            } else {
+                statusElement.innerHTML = `<span class="badge badge-safe">✓ No Alert</span>`;
+                labelElement.textContent = 'None Detected';
+
+                // Remove warning animation
+                const card = statusElement.closest('.card');
+                card.classList.remove('alert-active');
+            }
+        }
+
+        /**
+         * Update the timestamp display
+         */
+        function updateTimestamp(isoTimestamp) {
+            const date = new Date(isoTimestamp);
+            const timeString = date.toLocaleTimeString();
+            document.getElementById('timestamp').textContent = timeString;
+        }
+
+        /**
+         * Update the detected objects lists
+         */
+        function updateDetectedObjects(objects) {
+            // Helper function to get appropriate emoji for object type
+            function getObjectEmoji(objectType) {
+                const emojiMap = {
+                    'car': '🚗',
+                    'motorcycle': '🏍️',
+                    'bus': '🚌',
+                    'truck': '🚚',
+                    'cow': '🐄',
+                    'dog': '🐕',
+                    'cat': '🐱',
+                    'bird': '🐦',
+                    'traffic_light': '🚦',
+                    'barrier': '🚧',
+                    'stop_sign': '🛑'
+                };
+                return emojiMap[objectType] || '◯';
+            }
+
+            // Update vehicles list
+            updateObjectList('vehicles-list', objects.vehicles, getObjectEmoji);
+
+            // Update animals list
+            updateObjectList('animals-list', objects.animals, getObjectEmoji);
+
+            // Update infrastructure list
+            updateObjectList('infrastructure-list', objects.traffic_infrastructure, getObjectEmoji);
+        }
+
+        /**
+         * Helper function to update a specific object list
+         */
+        function updateObjectList(elementId, items, emojiFunc) {
+            const element = document.getElementById(elementId);
+            
+            if (items.length === 0) {
+                element.innerHTML = '<span class="empty-text">None</span>';
+            } else {
+                // Count occurrences of each object
+                const counts = {};
+                items.forEach(item => {
+                    counts[item] = (counts[item] || 0) + 1;
+                });
+
+                // Create badges for each unique object
+                element.innerHTML = Object.entries(counts)
+                    .map(([obj, count]) => `<span class="object-badge">${emojiFunc(obj)} ${obj} <small>(${count})</small></span>`)
+                    .join('');
+            }
+        }
+
+        /**
+         * Initialize the dashboard and set up auto-refresh
+         */
+        function initDashboard() {
+            console.log('Initializing Traffic Monitoring Dashboard...');
+            
+            // Fetch data immediately
+            fetchData();
+
+            // Set up auto-refresh
+            setInterval(fetchData, REFRESH_INTERVAL);
+        }
+
+        // Start the dashboard when the page loads
+        document.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+</html>

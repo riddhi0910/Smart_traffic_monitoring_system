@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: smart-traffic-monitor
+    runtime: python3
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT app:app
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: MODEL_PATH
+        value: ./95_e/cls_fix_30e/weights/best.pt
+      - key: VIDEO_SOURCE
+        value: ./sample_video.mp4  # You'll need to upload a sample video
+      - key: CONFIDENCE_THRESHOLD
+        value: 0.45
+      - key: FRAME_SKIP_RATE
+        value: 5  # Higher for production to save resources

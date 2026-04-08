@@ -1,0 +1,9 @@
+# Ignore everything in the 95_e directory
+*
+
+# But allow only specific essential files
+!cls_fix_30e/weights/best.pt
+!cls_fix_30e_test_eval/predictions.json
+
+# And allow this gitignore file itself
+!.gitignore

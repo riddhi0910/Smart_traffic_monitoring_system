@@ -1,0 +1,453 @@
+/* ============================================================================
+   TRAFFIC MONITORING DASHBOARD - STYLESHEET
+   ============================================================================ */
+
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #333;
+    line-height: 1.6;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+/* ============================================================================
+   CONTAINER & LAYOUT
+   ============================================================================ */
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Header Styles */
+.header {
+    text-align: center;
+    color: white;
+    margin-bottom: 40px;
+    animation: slideDown 0.6s ease-out;
+}
+
+.header h1 {
+    font-size: 2.5em;
+    font-weight: 700;
+    margin-bottom: 8px;
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.header .status-text {
+    font-size: 1.1em;
+    opacity: 0.9;
+    font-weight: 300;
+}
+
+/* Dashboard Grid */
+.dashboard {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+@media (max-width: 768px) {
+    .dashboard {
+        grid-template-columns: 1fr;
+    }
+    
+    .header h1 {
+        font-size: 1.8em;
+    }
+}
+
+/* ============================================================================
+   CARD STYLES
+   ============================================================================ */
+
+.card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    padding: 24px;
+    transition: all 0.3s ease;
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.card:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+.metric-card {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    min-height: 140px;
+}
+
+.card-icon {
+    font-size: 3em;
+    min-width: 80px;
+    text-align: center;
+}
+
+.card-content {
+    flex: 1;
+}
+
+.card-content h2 {
+    font-size: 0.95em;
+    color: #666;
+    font-weight: 600;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.card-label {
+    font-size: 0.85em;
+    color: #999;
+    margin-top: 8px;
+}
+
+/* Metric Value Styles */
+.metric-value {
+    font-size: 2.5em;
+    font-weight: 700;
+    color: #667eea;
+    line-height: 1;
+}
+
+.metric-value.pulse {
+    animation: pulse 0.6s ease-out;
+}
+
+/* ============================================================================
+   TRAFFIC DENSITY CARD
+   ============================================================================ */
+
+.traffic-density {
+    margin: 15px 0;
+}
+
+.density-badge {
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.95em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.density-low {
+    background: #10b981;
+    color: white;
+}
+
+.density-medium {
+    background: #f59e0b;
+    color: white;
+}
+
+.density-high {
+    background: #ef4444;
+    color: white;
+}
+
+/* Density Card Glow Effects */
+.density-card {
+    transition: box-shadow 0.4s ease;
+}
+
+.density-card.density-low-glow {
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
+}
+
+.density-card.density-medium-glow {
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.2);
+}
+
+.density-card.density-high-glow {
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+    animation: warningPulse 1s ease-in-out infinite;
+}
+
+/* ============================================================================
+   ALERT CARD
+   ============================================================================ */
+
+.badge {
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9em;
+}
+
+.badge-safe {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.badge-alert {
+    background: #fee2e2;
+    color: #991b1b;
+    font-weight: 700;
+}
+
+.alert-card {
+    transition: all 0.3s ease;
+}
+
+.alert-card.alert-active {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.3);
+    animation: alertGlow 0.6s ease-out;
+}
+
+/* ============================================================================
+   DETECTED OBJECTS SECTION
+   ============================================================================ */
+
+.full-width-card {
+    margin-bottom: 30px;
+    animation: fadeInUp 0.7s ease-out 0.2s both;
+}
+
+.section-title {
+    font-size: 1.3em;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #667eea;
+}
+
+.subsection-title {
+    font-size: 1em;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 12px;
+}
+
+.objects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.object-section {
+    padding: 16px;
+    background: #f9fafb;
+    border-radius: 8px;
+    border-left: 4px solid #667eea;
+}
+
+.object-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.object-badge {
+    display: inline-block;
+    background: white;
+    border: 1px solid #e5e7eb;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 0.85em;
+    font-weight: 500;
+    color: #374151;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.object-badge small {
+    margin-left: 4px;
+    color: #9ca3af;
+    font-size: 0.8em;
+}
+
+.empty-text {
+    color: #d1d5db;
+    font-style: italic;
+    font-size: 0.9em;
+}
+
+/* ============================================================================
+   TIMESTAMP CARD
+   ============================================================================ */
+
+.timestamp {
+    font-size: 1.8em;
+    font-weight: 600;
+    color: #764ba2;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 1px;
+}
+
+/* ============================================================================
+   FOOTER
+   ============================================================================ */
+
+.footer {
+    text-align: center;
+    color: white;
+    margin-top: 50px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    font-size: 0.9em;
+    opacity: 0.8;
+}
+
+/* ============================================================================
+   ANIMATIONS
+   ============================================================================ */
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes warningPulse {
+    0%, 100% {
+        box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+    }
+    50% {
+        box-shadow: 0 4px 25px rgba(239, 68, 68, 0.5);
+    }
+}
+
+@keyframes alertGlow {
+    0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    }
+    100% {
+        box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+    }
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+@media (max-width: 1024px) {
+    .dashboard {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .objects-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 12px;
+    }
+
+    .container {
+        padding: 0;
+    }
+
+    .card {
+        padding: 16px;
+    }
+
+    .metric-card {
+        flex-direction: column;
+        text-align: center;
+        gap: 12px;
+        min-height: auto;
+    }
+
+    .card-icon {
+        font-size: 2.5em;
+        min-width: auto;
+    }
+
+    .metric-value {
+        font-size: 2em;
+    }
+
+    .dashboard {
+        grid-template-columns: 1fr;
+    }
+
+    .objects-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .section-title {
+        font-size: 1.1em;
+    }
+
+    .header h1 {
+        font-size: 1.6em;
+    }
+}
+
+@media (max-width: 480px) {
+    .header h1 {
+        font-size: 1.3em;
+    }
+
+    .metric-value {
+        font-size: 1.6em;
+    }
+
+    .card-content h2 {
+        font-size: 0.85em;
+    }
+
+    .density-badge {
+        padding: 6px 12px;
+        font-size: 0.85em;
+    }
+
+    .object-badge {
+        font-size: 0.75em;
+        padding: 4px 8px;
+    }
+}
