@@ -283,7 +283,13 @@ MODEL_PATH = r"C:\Users\VICUTUS\OneDrive\文档\Desktop\DL LAB PROJECT 59 61\95_
 VIDEO_SOURCE = r"C:\Users\VICUTUS\OneDrive\文档\Desktop\DL LAB PROJECT 59 61\WhatsApp Video 2026-04-08 at 10.31.39 PM.mp4"
 
 # Initialize detectors
-yolo_detector = YOLODetector(MODEL_PATH, VIDEO_SOURCE, conf_threshold=0.45)
+# Try to get video source from environment, fallback to None if not set
+VIDEO_SOURCE = os.getenv('VIDEO_SOURCE')
+if not VIDEO_SOURCE or not os.path.exists(VIDEO_SOURCE):
+    print("No valid video source found, will use mock data until user uploads a video")
+    VIDEO_SOURCE = None
+
+yolo_detector = YOLODetector(MODEL_PATH, VIDEO_SOURCE, conf_threshold=0.45) if VIDEO_SOURCE else None
 detection_processor = DetectionProcessor()
 
 # ============================================================================
@@ -294,10 +300,12 @@ detection_processor = DetectionProcessor()
 def startup():
     """Start YOLO detector when Flask app starts."""
     print("Starting Flask app...")
-    if yolo_detector.start():
+    global yolo_detector
+
+    if yolo_detector and yolo_detector.start():
         print("YOLO detector initialized and running")
     else:
-        print("YOLO detector failed to start, will use mock data")
+        print("YOLO detector not available (no video uploaded yet), will use mock data")
 
 @app.teardown_appcontext
 def shutdown(exception=None):
@@ -329,14 +337,14 @@ def get_detection_data():
         - detected_objects: dict (optional, for frontend display)
     """
     # Try to get real YOLO detections first
-    if yolo_detector.is_active():
+    if yolo_detector and yolo_detector.is_active():
         detections = yolo_detector.get_current_detections()
         detection_processor.process_yolo_output(detections)
         print(f"Using YOLO detections: {detections}")
     else:
         # Fallback to mock data if YOLO not available
         detection_processor.mock_detection()
-        print("Using mock detections (YOLO not active)")
+        print("Using mock detections (YOLO not active or no video uploaded)")
 
     vehicle_count = detection_processor.get_vehicle_count()
     animal_detected = detection_processor.has_animal()
@@ -358,10 +366,11 @@ def health():
     """Health check endpoint."""
     return jsonify({
         'status': 'ok',
-        'yolo_active': yolo_detector.is_active(),
-        'model_loaded': yolo_detector.model is not None,
-        'video_source': yolo_detector.video_source,
+        'yolo_active': yolo_detector.is_active() if yolo_detector else False,
+        'model_loaded': yolo_detector.model is not None if yolo_detector else False,
+        'video_source': yolo_detector.video_source if yolo_detector else None,
         'model_path': MODEL_PATH,
+        'uploads_available': len(list_videos().get_json()['videos']) if os.path.exists(UPLOAD_FOLDER) else 0
     })
 
 
@@ -395,6 +404,11 @@ def upload_video():
         file.save(file_path)
 
         # Switch to new video
+        global yolo_detector
+        if not yolo_detector:
+            # Create new detector if none exists
+            yolo_detector = YOLODetector(MODEL_PATH, file_path, conf_threshold=0.45)
+
         if yolo_detector.switch_video_source(file_path):
             return jsonify({
                 'success': True,
@@ -426,12 +440,12 @@ def list_videos():
                         'filename': filename,
                         'path': file_path,
                         'size': os.path.getsize(file_path),
-                        'active': file_path == yolo_detector.video_source
+                        'active': yolo_detector and file_path == yolo_detector.video_source
                     })
 
         return jsonify({
             'videos': videos,
-            'current_video': yolo_detector.video_source
+            'current_video': yolo_detector.video_source if yolo_detector else None
         })
     except Exception as e:
         print(f"Error listing videos: {e}")
@@ -446,6 +460,9 @@ def switch_video(filename):
 
         if not os.path.exists(file_path):
             return jsonify({'error': 'Video file not found'}), 404
+
+        if not yolo_detector:
+            return jsonify({'error': 'YOLO detector not initialized'}), 500
 
         if yolo_detector.switch_video_source(file_path):
             return jsonify({
