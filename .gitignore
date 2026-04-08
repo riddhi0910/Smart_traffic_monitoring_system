@@ -161,6 +161,14 @@ runs/
 ehthumbs.db
 Thumbs.db
 
+# Project specific
+# Uploaded videos (can be large files)
+uploads/
+
+# Temporary files
+*.tmp
+*.temp
+
 # Logs
 logs/
 *.log

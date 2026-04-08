@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request, redirect, url_for
 from datetime import datetime
 import random
 from typing import List, Dict, Tuple
@@ -7,6 +7,9 @@ from ultralytics import YOLO
 import threading
 import time
 import os
+import werkzeug.utils
+from werkzeug.utils import secure_filename
+import uuid
 
 # Import configuration
 from config import (
@@ -18,8 +21,23 @@ from config import (
 app = Flask(__name__)
 
 # ============================================================================
-# YOLO DETECTOR INTEGRATION
+# CONFIGURATION FOR FILE UPLOADS
 # ============================================================================
+
+# Configure upload settings
+UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
+ALLOWED_EXTENSIONS = {'mp4', 'avi', 'mov', 'mkv', 'webm', 'm4v'}
+MAX_FILE_SIZE = 500 * 1024 * 1024  # 500MB limit
+
+# Create uploads directory if it doesn't exist
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
+
+def allowed_file(filename):
+    """Check if file extension is allowed."""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 class YOLODetector:
     """
@@ -133,9 +151,27 @@ class YOLODetector:
         """Get the latest detections."""
         return self.current_detections.copy()
 
-    def is_active(self) -> bool:
-        """Check if detector is actively processing."""
-        return self.running and (time.time() - self.last_frame_time) < 5.0  # 5 second timeout
+    def switch_video_source(self, new_video_path: str) -> bool:
+        """Switch to a new video source dynamically."""
+        if not os.path.exists(new_video_path):
+            print(f"Error: Video file not found: {new_video_path}")
+            return False
+
+        print(f"Switching video source from {self.video_source} to {new_video_path}")
+
+        # Stop current processing
+        was_running = self.running
+        if was_running:
+            self.stop()
+
+        # Update video source
+        self.video_source = new_video_path
+
+        # Restart if it was running
+        if was_running:
+            return self.start()
+
+        return True
 
 
 # ============================================================================
@@ -324,9 +360,105 @@ def health():
         'status': 'ok',
         'yolo_active': yolo_detector.is_active(),
         'model_loaded': yolo_detector.model is not None,
-        'video_source': VIDEO_SOURCE,
+        'video_source': yolo_detector.video_source,
         'model_path': MODEL_PATH,
     })
+
+
+@app.route('/upload', methods=['POST'])
+def upload_video():
+    """Handle video file uploads."""
+    try:
+        # Check if file is in request
+        if 'video' not in request.files:
+            return jsonify({'error': 'No video file provided'}), 400
+
+        file = request.files['video']
+
+        # Check if file is selected
+        if file.filename == '':
+            return jsonify({'error': 'No video file selected'}), 400
+
+        # Validate file type
+        if not allowed_file(file.filename):
+            return jsonify({
+                'error': f'Invalid file type. Allowed: {", ".join(ALLOWED_EXTENSIONS)}'
+            }), 400
+
+        # Secure filename and generate unique name
+        original_filename = secure_filename(file.filename)
+        file_extension = original_filename.rsplit('.', 1)[1].lower()
+        unique_filename = f"{uuid.uuid4().hex}.{file_extension}"
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+
+        # Save file
+        file.save(file_path)
+
+        # Switch to new video
+        if yolo_detector.switch_video_source(file_path):
+            return jsonify({
+                'success': True,
+                'message': 'Video uploaded and switched successfully',
+                'filename': original_filename,
+                'file_path': file_path,
+                'file_size': os.path.getsize(file_path)
+            })
+        else:
+            # Clean up file if switching failed
+            os.remove(file_path)
+            return jsonify({'error': 'Failed to switch video source'}), 500
+
+    except Exception as e:
+        print(f"Upload error: {e}")
+        return jsonify({'error': 'Upload failed'}), 500
+
+
+@app.route('/videos')
+def list_videos():
+    """List all uploaded videos."""
+    try:
+        videos = []
+        if os.path.exists(UPLOAD_FOLDER):
+            for filename in os.listdir(UPLOAD_FOLDER):
+                if allowed_file(filename):
+                    file_path = os.path.join(UPLOAD_FOLDER, filename)
+                    videos.append({
+                        'filename': filename,
+                        'path': file_path,
+                        'size': os.path.getsize(file_path),
+                        'active': file_path == yolo_detector.video_source
+                    })
+
+        return jsonify({
+            'videos': videos,
+            'current_video': yolo_detector.video_source
+        })
+    except Exception as e:
+        print(f"Error listing videos: {e}")
+        return jsonify({'error': 'Failed to list videos'}), 500
+
+
+@app.route('/switch_video/<filename>')
+def switch_video(filename):
+    """Switch to a different uploaded video."""
+    try:
+        file_path = os.path.join(UPLOAD_FOLDER, secure_filename(filename))
+
+        if not os.path.exists(file_path):
+            return jsonify({'error': 'Video file not found'}), 404
+
+        if yolo_detector.switch_video_source(file_path):
+            return jsonify({
+                'success': True,
+                'message': f'Switched to {filename}',
+                'file_path': file_path
+            })
+        else:
+            return jsonify({'error': 'Failed to switch video'}), 500
+
+    except Exception as e:
+        print(f"Switch video error: {e}")
+        return jsonify({'error': 'Failed to switch video'}), 500
 
 
 # ============================================================================

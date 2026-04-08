@@ -61,9 +61,37 @@
             </div>
         </div>
 
-        <!-- Detected Objects Section -->
+        <!-- Video Upload Section -->
         <div class="card full-width-card">
-            <h2 class="section-title">📋 Detected Objects</h2>
+            <h2 class="section-title">📤 Video Upload & Management</h2>
+
+            <!-- Upload Form -->
+            <div class="upload-section">
+                <form id="upload-form" enctype="multipart/form-data">
+                    <div class="upload-controls">
+                        <input type="file" id="video-file" name="video" accept="video/*" required>
+                        <button type="submit" class="upload-btn" id="upload-btn">
+                            <span class="btn-text">📤 Upload & Switch Video</span>
+                            <span class="btn-loading" style="display: none;">⏳ Uploading...</span>
+                        </button>
+                    </div>
+                    <div class="upload-info">
+                        <small>Supported formats: MP4, AVI, MOV, MKV, WebM, M4V (Max: 500MB)</small>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Upload Status -->
+            <div id="upload-status" class="upload-status" style="display: none;"></div>
+
+            <!-- Video List -->
+            <div class="video-list-section">
+                <h3 class="subsection-title">📋 Available Videos</h3>
+                <div id="video-list" class="video-list">
+                    <div class="loading-text">Loading videos...</div>
+                </div>
+            </div>
+        </div>
             <div class="objects-grid">
                 <div class="object-section">
                     <h3 class="subsection-title">🚗 Vehicles</h3>
@@ -99,6 +127,167 @@
         // Configuration
         const REFRESH_INTERVAL = 1000; // 1 second in milliseconds
         const API_ENDPOINT = '/data';
+
+        // Video management variables
+        let availableVideos = [];
+        let currentVideoPath = null;
+
+        /**
+         * Initialize the application
+         */
+        function initializeApp() {
+            setupUploadForm();
+            loadVideoList();
+        }
+
+        /**
+         * Setup upload form handling
+         */
+        function setupUploadForm() {
+            const form = document.getElementById('upload-form');
+            const fileInput = document.getElementById('video-file');
+            const uploadBtn = document.getElementById('upload-btn');
+            const btnText = uploadBtn.querySelector('.btn-text');
+            const btnLoading = uploadBtn.querySelector('.btn-loading');
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const file = fileInput.files[0];
+                if (!file) {
+                    showUploadStatus('Please select a video file', 'error');
+                    return;
+                }
+
+                // Validate file size (500MB)
+                if (file.size > 500 * 1024 * 1024) {
+                    showUploadStatus('File too large. Maximum size is 500MB', 'error');
+                    return;
+                }
+
+                // Show loading state
+                uploadBtn.disabled = true;
+                btnText.style.display = 'none';
+                btnLoading.style.display = 'inline';
+
+                try {
+                    const formData = new FormData();
+                    formData.append('video', file);
+
+                    const response = await fetch('/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok && result.success) {
+                        showUploadStatus(`✅ ${result.message}`, 'success');
+                        fileInput.value = ''; // Clear file input
+                        loadVideoList(); // Refresh video list
+                    } else {
+                        showUploadStatus(`❌ ${result.error}`, 'error');
+                    }
+                } catch (error) {
+                    console.error('Upload error:', error);
+                    showUploadStatus('❌ Upload failed. Please try again.', 'error');
+                } finally {
+                    // Reset button state
+                    uploadBtn.disabled = false;
+                    btnText.style.display = 'inline';
+                    btnLoading.style.display = 'none';
+                }
+            });
+        }
+
+        /**
+         * Show upload status message
+         */
+        function showUploadStatus(message, type) {
+            const statusDiv = document.getElementById('upload-status');
+            statusDiv.textContent = message;
+            statusDiv.className = `upload-status ${type}`;
+            statusDiv.style.display = 'block';
+
+            // Auto-hide success messages after 5 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        /**
+         * Load and display list of available videos
+         */
+        async function loadVideoList() {
+            try {
+                const response = await fetch('/videos');
+                const data = await response.json();
+
+                if (response.ok) {
+                    availableVideos = data.videos;
+                    currentVideoPath = data.current_video;
+                    renderVideoList();
+                } else {
+                    console.error('Failed to load videos:', data.error);
+                }
+            } catch (error) {
+                console.error('Error loading video list:', error);
+            }
+        }
+
+        /**
+         * Render the video list in the UI
+         */
+        function renderVideoList() {
+            const container = document.getElementById('video-list');
+
+            if (availableVideos.length === 0) {
+                container.innerHTML = '<div class="empty-text">No videos uploaded yet</div>';
+                return;
+            }
+
+            const videoItems = availableVideos.map(video => {
+                const isActive = video.path === currentVideoPath;
+                const sizeMB = (video.size / (1024 * 1024)).toFixed(1);
+
+                return `
+                    <div class="video-item ${isActive ? 'active' : ''}">
+                        <div class="video-info">
+                            <div class="video-name">${video.filename}</div>
+                            <div class="video-details">${sizeMB} MB ${isActive ? '• Active' : ''}</div>
+                        </div>
+                        <div class="video-actions">
+                            ${!isActive ? `<button class="switch-btn" onclick="switchToVideo('${video.filename}')">Switch</button>` : '<span class="active-label">🎥 Active</span>'}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = videoItems;
+        }
+
+        /**
+         * Switch to a different video
+         */
+        async function switchToVideo(filename) {
+            try {
+                const response = await fetch(`/switch_video/${filename}`);
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    showUploadStatus(`✅ ${result.message}`, 'success');
+                    currentVideoPath = result.file_path;
+                    renderVideoList(); // Update UI to show new active video
+                } else {
+                    showUploadStatus(`❌ ${result.error}`, 'error');
+                }
+            } catch (error) {
+                console.error('Switch video error:', error);
+                showUploadStatus('❌ Failed to switch video', 'error');
+            }
+        }
 
         /**
          * Fetch detection data from the backend API
@@ -255,7 +444,10 @@
          */
         function initDashboard() {
             console.log('Initializing Traffic Monitoring Dashboard...');
-            
+
+            // Initialize video upload functionality
+            initializeApp();
+
             // Fetch data immediately
             fetchData();
 
