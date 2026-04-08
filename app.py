@@ -318,7 +318,8 @@ def startup():
 def shutdown(exception=None):
     """Stop YOLO detector when Flask app shuts down."""
     print("Shutting down Flask app...")
-    yolo_detector.stop()
+    if yolo_detector:
+        yolo_detector.stop()
 
 # ============================================================================
 # FLASK ROUTES
