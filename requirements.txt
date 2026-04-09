@@ -5,14 +5,11 @@ gunicorn==21.2.0
 
 # YOLO and Computer Vision
 ultralytics>=8.0.0
-opencv-python>=4.8.0
-torch>=2.0.0
-torchvision>=0.15.0
-
-# Data processing
+opencv-python-headless>=4.8.0
 numpy>=1.24.0
 Pillow>=9.0.0
 
-# Optional: GPU support (uncomment if needed)
-# torch==2.0.0+cu118 --index-url https://download.pytorch.org/whl/cu118
-# torchvision==0.15.0+cu118 --index-url https://download.pytorch.org/whl/cu118
+# PyTorch CPU-only (much smaller, works on Render free tier)
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.0.0
+torchvision>=0.15.0

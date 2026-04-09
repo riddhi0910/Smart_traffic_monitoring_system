@@ -151,6 +151,10 @@ class YOLODetector:
         """Get the latest detections."""
         return self.current_detections.copy()
 
+    def is_active(self) -> bool:
+        """Return whether YOLO detection is currently running."""
+        return bool(self.model and self.running and self.cap and self.cap.isOpened())
+
     def switch_video_source(self, new_video_path: str) -> bool:
         """Switch to a new video source dynamically."""
         if not os.path.exists(new_video_path):
@@ -159,19 +163,15 @@ class YOLODetector:
 
         print(f"Switching video source from {self.video_source} to {new_video_path}")
 
-        # Stop current processing
-        was_running = self.running
-        if was_running:
+        # Stop current processing if running
+        if self.running:
             self.stop()
 
         # Update video source
         self.video_source = new_video_path
 
-        # Restart if it was running
-        if was_running:
-            return self.start()
-
-        return True
+        # Attempt to start detection after switching source
+        return self.start()
 
 
 # ============================================================================
@@ -278,18 +278,15 @@ class DetectionProcessor:
 # GLOBAL DETECTOR INSTANCES
 # ============================================================================
 
-# Configuration - Update these paths as needed
-MODEL_PATH = r"C:\Users\VICUTUS\OneDrive\文档\Desktop\DL LAB PROJECT 59 61\95_e\cls_fix_30e\weights\best.pt"
-VIDEO_SOURCE = r"C:\Users\VICUTUS\OneDrive\文档\Desktop\DL LAB PROJECT 59 61\WhatsApp Video 2026-04-08 at 10.31.39 PM.mp4"
-
 # Initialize detectors
-# Try to get video source from environment, fallback to None if not set
-VIDEO_SOURCE = os.getenv('VIDEO_SOURCE')
-if not VIDEO_SOURCE or not os.path.exists(VIDEO_SOURCE):
+# Use MODEL_PATH from config (supports env var override)
+# Try to get video source - on Render, expect user uploads instead
+_video_source = VIDEO_SOURCE
+if not _video_source or not os.path.exists(_video_source):
     print("No valid video source found, will use mock data until user uploads a video")
-    VIDEO_SOURCE = None
+    _video_source = None
 
-yolo_detector = YOLODetector(MODEL_PATH, VIDEO_SOURCE, conf_threshold=0.45) if VIDEO_SOURCE else None
+yolo_detector = YOLODetector(MODEL_PATH, _video_source, conf_threshold=0.45) if _video_source else None
 detection_processor = DetectionProcessor()
 
 # ============================================================================
@@ -365,7 +362,7 @@ def get_detection_data():
         'timestamp': datetime.now().isoformat(),
         'detected_objects': detection_processor.get_detected_objects(),
         'animal_types': detection_processor.get_animal_types(),
-        'yolo_active': yolo_detector.is_active(),
+        'yolo_active': yolo_detector.is_active() if yolo_detector else False,
     })
 
 
